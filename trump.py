@@ -42,7 +42,7 @@ def loadData(extractfeatures, filename, istraining, B=512):
     
     OUTPUT:
     X, Y
-    """
+    '''
     # open files
     data = pd.read_csv(filename)
 
