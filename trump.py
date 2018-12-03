@@ -127,6 +127,50 @@ class TreeNode(object):
         self.prediction = prediction
 
 
+def sqlsplit(xTr, yTr, weights=[]):
+    N, D = xTr.shape
+    assert D > 0
+    assert N > 1
+    if weights == []:
+        weights = np.ones(N)
+    weights = weights / sum(weights)
+    bestloss = np.inf
+    feature = np.inf
+    cut = np.inf
+
+    sort = np.argsort(xTr, axis=0)
+    for i in range(D):
+        workingarray = sort[:i]
+        xTrFeat = xTr[:, i][workingarray]
+        yTrFeat = yTr[workingarray]
+        weightFeat = weights[workingarray]
+
+        for j in range(N - 1):
+            if xTrFeat[j] != xTrFeat[j + 1]:
+
+                cutoff = xTrFeat[j] + xTr[j + 1]
+
+                QL = np.dot(np.square(yTrFeat[0 : j + 1]), weightFeat[0 : j + 1])
+                PL = np.dot(yTrFeat[0 : j + 1], weightFeat[0 : j + 1])
+                WL = np.sum(weightFeat[0 : j + 1])
+
+                LossLeft = QL - np.square(PL) / WL
+
+                QR = np.dot(np.square(yTrFeat[j + 1 : N]), weightFeat[j + 1 : N])
+                PR = np.dot(yTrFeat[j + 1 : N], weightFeat[j + 1 : N])
+                WR = np.sum(weightFeat[j + 1 : N])
+
+                LossRight = QR - np.square(PR) / WR
+
+                cutloss = LossLeft + LossRight
+                if cutloss < bestloss:
+                    feature = i
+                    bestloss = cutloss
+                    cut = cutoff
+
+    return feature, cut, bestloss
+
+
 def cart(xTr, yTr, depth=np.inf, weights=None):
     """Builds a CART tree.
 
