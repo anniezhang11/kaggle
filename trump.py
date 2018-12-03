@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 import string
 import nltk
 from nltk.stem.porter import *
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from wordcloud import WordCloud
+
+nltk.download('vader_lexicon')
 
 #functions used
 def hashtag_extract(x):
@@ -27,9 +30,12 @@ train["tidy_tweet"] = train["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
 # tokenize
 tokenized_train = train["tidy_tweet"].apply(lambda x: x.split())
 
+sentiment_analyzer = SentimentIntensityAnalyzer()
+sentiments = train["tidy_tweet"].apply(lambda x: sentiment_analyzer.polarity_scores(x))
+
 # stem the words
 stemmer = PorterStemmer()
-tokenized_train= tokenized_train.apply(lambda x: [stemmer.stem(i) for i in x])
+tokenized_train = tokenized_train.apply(lambda x: [stemmer.stem(i) for i in x])
 
 # stemming
 android_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 1]])
@@ -54,4 +60,4 @@ test = pd.read_csv("test.csv")
 test["tidy_tweet"] = np.array(test["text"])
 test["tidy_tweet"] = test["tidy_tweet"].str.replace("[^a-zA-Z#]", " ")
 tokenized_test = test["tidy_tweet"].apply(lambda x: x.split())
-tokenized_test= tokenized_test.apply(lambda x: [stemmer.stem(i) for i in x])
+tokenized_test = tokenized_test.apply(lambda x: [stemmer.stem(i) for i in x])
