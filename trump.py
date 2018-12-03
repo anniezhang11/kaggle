@@ -6,7 +6,6 @@ import string
 import nltk
 from nltk.stem.porter import *
 from wordcloud import WordCloud
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 #functions used
 def hashtag_extract(x):
