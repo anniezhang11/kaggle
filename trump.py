@@ -32,7 +32,7 @@ def extractfeaturesnaive(path, B):
             v[hash(token) % B] = 1
     return v
 
-def loadData(extractfeatures, filename, B=512):
+def loadData(extractfeatures, filename, istraining, B=512):
     '''
     INPUT:
     extractfeatures : function to extract features
@@ -59,37 +59,25 @@ def loadData(extractfeatures, filename, B=512):
     # word sets
     # android_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 1]])
     # iphone_words = " ".join([text for text in train["tidy_tweet"][train["label"] == -1]])
+
+    sentiment_analyzer = SentimentIntensityAnalyzer()
+    sentiments = data["tidy_tweet"].apply(lambda x: sentiment_analyzer.polarity_scores(x))
     
-    xs = np.zeros((len(data), B))
-    ys = np.zeros(len(data))
-    for i in range(len(data["label"])):
-        tokens = tokenized_data[i]
-        ys[i] = data["label"][i]
-        # xs[i][0] = 
-    # print('Loaded %d input emails.' % len(ys))
-    print(ys)
-    return xs, ys
+    xs = np.zeros((len(data), 4))
+    if istraining:
+        ys = np.zeros(len(data))
+    for i in range(len(data["tidy_tweet"])):
+        if istraining:
+            ys[i] = data["label"][i]
+        xs[i][0] = sentiments[i]['neg'] 
+        xs[i][1] = sentiments[i]['neu'] 
+        xs[i][2] = sentiments[i]['pos'] 
+        xs[i][3] = sentiments[i]['compound'] 
+    if istraining: 
+        return xs, ys
+    return xs
+training_data, training_labels = loadData(extractfeaturesnaive, "train.csv", True)
 
-X,Y = loadData(extractfeaturesnaive, "train.csv")
-X.shape
-
-# clean up data
-train["tidy_tweet"] = np.array(train["text"])
-train["tidy_tweet"] = train["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
-
-# tokenize
-tokenized_train = train["tidy_tweet"].apply(lambda x: x.split())
-
-sentiment_analyzer = SentimentIntensityAnalyzer()
-sentiments = train["tidy_tweet"].apply(lambda x: sentiment_analyzer.polarity_scores(x))
-
-# stem the words
-stemmer = PorterStemmer()
-tokenized_train = tokenized_train.apply(lambda x: [stemmer.stem(i) for i in x])
-
-# stemming
-android_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 1]])
-iphone_words = " ".join([text for text in train["tidy_tweet"][train["label"] == -1]])
 # wordcloud = WordCloud(
 #     width=800, height=500, random_state=21, max_font_size=110
 # ).generate(android_words)
@@ -105,11 +93,8 @@ iphone_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 
 # HT_iphone = sum(HT_iphone,[])
 
 # testing data
-test = pd.read_csv("test.csv")
-test["tidy_tweet"] = np.array(test["text"])
-test["tidy_tweet"] = test["tidy_tweet"].str.replace("[^a-zA-Z#]", " ")
-tokenized_test = test["tidy_tweet"].apply(lambda x: x.split())
-tokenized_test= tokenized_test.apply(lambda x: [stemmer.stem(i) for i in x])
+testing_data, testing_labels = loadData(extractfeaturesnaive, "test.csv", False)
+
 
 class TreeNode(object):
     """Tree class.
