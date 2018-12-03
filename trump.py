@@ -8,9 +8,9 @@ from nltk.stem.porter import *
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from wordcloud import WordCloud
 
-nltk.download('vader_lexicon')
+nltk.download("vader_lexicon")
 
-#functions used
+# functions used
 def hashtag_extract(x):
     hashtags = []
     # Loop over the words in the tweet
@@ -20,9 +20,10 @@ def hashtag_extract(x):
 
     return hashtags
 
+
 # tokenize the email and hashes the symbols into a vector
 def extractfeaturesnaive(path, B):
-    with open(path, 'r') as femail:
+    with open(path, "r") as femail:
         # initialize all-zeros feature vector
         v = np.zeros(B)
         email = femail.read()
@@ -41,7 +42,7 @@ def loadData(extractfeatures, filename, istraining, B=512):
     
     OUTPUT:
     X, Y
-    '''
+    """
     # open files
     data = pd.read_csv(filename)
 
@@ -54,7 +55,7 @@ def loadData(extractfeatures, filename, istraining, B=512):
 
     # stem the words
     stemmer = PorterStemmer()
-    tokenized_data= tokenized_data.apply(lambda x: [stemmer.stem(i) for i in x])
+    tokenized_data = tokenized_data.apply(lambda x: [stemmer.stem(i) for i in x])
 
     # word sets
     # android_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 1]])
@@ -108,7 +109,51 @@ class TreeNode(object):
         self.prediction = prediction
 
 
-def cart(xTr, yTr, depth=np.inf, weights = None):
+def sqlsplit(xTr, yTr, weights=[]):
+    N, D = xTr.shape
+    assert D > 0
+    assert N > 1
+    if weights == []:
+        weights = np.ones(N)
+    weights = weights / sum(weights)
+    bestloss = np.inf
+    feature = np.inf
+    cut = np.inf
+
+    sort = np.argsort(xTr, axis=0)
+    for i in range(D):
+        workingarray = sort[:i]
+        xTrFeat = xTr[:, i][workingarray]
+        yTrFeat = yTr[workingarray]
+        weightFeat = weights[workingarray]
+
+        for j in range(N - 1):
+            if xTrFeat[j] != xTrFeat[j + 1]:
+
+                cutoff = xTrFeat[j] + xTr[j + 1]
+
+                QL = np.dot(np.square(yTrFeat[0 : j + 1]), weightFeat[0 : j + 1])
+                PL = np.dot(yTrFeat[0 : j + 1], weightFeat[0 : j + 1])
+                WL = np.sum(weightFeat[0 : j + 1])
+
+                LossLeft = QL - np.square(PL) / WL
+
+                QR = np.dot(np.square(yTrFeat[j + 1 : N]), weightFeat[j + 1 : N])
+                PR = np.dot(yTrFeat[j + 1 : N], weightFeat[j + 1 : N])
+                WR = np.sum(weightFeat[j + 1 : N])
+
+                LossRight = QR - np.square(PR) / WR
+
+                cutloss = LossLeft + LossRight
+                if cutloss < bestloss:
+                    feature = i
+                    bestloss = cutloss
+                    cut = cutoff
+
+    return feature, cut, bestloss
+
+
+def cart(xTr, yTr, depth=np.inf, weights=None):
     """Builds a CART tree.
 
     The maximum tree depth is defined by "maxdepth" (maxdepth=2 means one split).
@@ -123,14 +168,14 @@ def cart(xTr, yTr, depth=np.inf, weights = None):
     Returns:
         tree:       root of decision tree
     """
-    n,d = xTr.shape
+    n, d = xTr.shape
     if weights is None:
         w = np.ones(n) / float(n)
     else:
         w = weights
-    
+
     cutoff_id, cutoff_val, _ = sqsplit(xTr, yTr, weights=w)
-    feature_row = xTr[:,cutoff_id]
+    feature_row = xTr[:, cutoff_id]
     left_indices = np.nonzero(feature_row <= cutoff_val)[0]
     right_indices = np.nonzero(feature_row > cutoff_val)[0]
 
@@ -157,14 +202,14 @@ def cart(xTr, yTr, depth=np.inf, weights = None):
         node.prediction = np.average(yTr_node)
 
         if len(indices) > 1 and node.depth < depth:
-            cutoff_id, cutoff_val, _ = sqsplit(xTr_node, yTr_node, weights = w_node)
+            cutoff_id, cutoff_val, _ = sqsplit(xTr_node, yTr_node, weights=w_node)
             node.cutoff_val = cutoff_val
 
             # Unable to find a cutoff, so there can be no further branch
             if node.cutoff_id == np.inf:
                 continue
 
-            feature_row = xTr_node[:,cutoff_id]
+            feature_row = xTr_node[:, cutoff_id]
 
             left_indices = indices[np.nonzero(feature_row <= cutoff_val)[0]]
             right_indices = indices[np.nonzero(feature_row > cutoff_val)[0]]
