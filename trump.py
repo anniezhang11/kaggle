@@ -17,8 +17,58 @@ def hashtag_extract(x):
 
     return hashtags
 
-# open files
-train = pd.read_csv("train.csv")
+# tokenize the email and hashes the symbols into a vector
+def extractfeaturesnaive(path, B):
+    with open(path, 'r') as femail:
+        # initialize all-zeros feature vector
+        v = np.zeros(B)
+        email = femail.read()
+        # breaks for non-ascii characters
+        tokens = email.split()
+        for token in tokens:
+            v[hash(token) % B] = 1
+    return v
+
+def loadData(extractfeatures, filename, B=512):
+    '''
+    INPUT:
+    extractfeatures : function to extract features
+    B               : dimensionality of feature space
+    path            : the path of folder to be processed
+    
+    OUTPUT:
+    X, Y
+    '''
+    # open files
+    data = pd.read_csv(filename)
+
+    # clean up data
+    data["tidy_tweet"] = np.array(data["text"])
+    data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
+
+    # tokenize
+    tokenized_data = data["tidy_tweet"].apply(lambda x: x.split())
+
+    # stem the words
+    stemmer = PorterStemmer()
+    tokenized_data= tokenized_data.apply(lambda x: [stemmer.stem(i) for i in x])
+
+    # word sets
+    # android_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 1]])
+    # iphone_words = " ".join([text for text in train["tidy_tweet"][train["label"] == -1]])
+    
+    xs = np.zeros((len(data), B))
+    ys = np.zeros(len(data))
+    for i in range(len(data["label"])):
+        tokens = tokenized_data[i]
+        ys[i] = data["label"][i]
+        # xs[i][0] = 
+    # print('Loaded %d input emails.' % len(ys))
+    print(ys)
+    return xs, ys
+
+X,Y = loadData(extractfeaturesnaive, "train.csv")
+X.shape
 
 # clean up data
 train["tidy_tweet"] = np.array(train["text"])
@@ -43,11 +93,10 @@ iphone_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 
 # plt.show()
 
 # processing hashtags
-HT_android = hashtag_extract(train['tidy_tweet'][train['label'] == 1])
-HT_iphone = hashtag_extract(train['tidy_tweet'][train['label'] == -1])
-HT_android = sum(HT_android,[])
-HT_iphone = sum(HT_iphone,[])
-print(HT_android)
+# HT_android = hashtag_extract(train['tidy_tweet'][train['label'] == 1])
+# HT_iphone = hashtag_extract(train['tidy_tweet'][train['label'] == -1])
+# HT_android = sum(HT_android,[])
+# HT_iphone = sum(HT_iphone,[])
 
 # testing data
 test = pd.read_csv("test.csv")
