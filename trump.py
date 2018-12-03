@@ -21,21 +21,13 @@ tokenized_tweet = combi["tidy_tweet"].apply(lambda x: x.split())
 
 # stem the words
 stemmer = PorterStemmer()
-tokenized_tweet = tokenized_tweet.apply(
-    lambda x: [stemmer.stem(i) for i in x]
-)  
+tokenized_tweet = tokenized_tweet.apply(lambda x: [stemmer.stem(i) for i in x])
 
 # stemming
-for i in range(len(tokenized_tweet)):
-    tokenized_tweet[i] = " ".join(tokenized_tweet[i])
-
-combi["tidy_tweet"] = tokenized_tweet
-all_words = " ".join([text for text in combi["tidy_tweet"]])
-
+negative_words = " ".join([text for text in combi["tidy_tweet"][combi["label"] == 1]])
 wordcloud = WordCloud(
     width=800, height=500, random_state=21, max_font_size=110
-).generate(all_words)
-
+).generate(negative_words)
 plt.figure(figsize=(10, 7))
 plt.imshow(wordcloud, interpolation="bilinear")
 plt.axis("off")
