@@ -80,7 +80,7 @@ def loadData(filename, istraining, B=512):
             ys[i] = data["label"][i]
         j = 0
         for _, value in sentiments[i].iteritems():
-            xs[i][j] = value
+            xs[i,j] = value
             j += 1
         j = 0
     return xs, ys
@@ -102,7 +102,7 @@ training_data, training_labels = loadData("train.csv", True)
 # HT_iphone = sum(HT_iphone,[])
 
 # testing data
-testing_data, testing_labels = loadData("test.csv", False)
+testing_data = loadData("test.csv", False)
 
 
 class TreeNode(object):
@@ -137,10 +137,8 @@ def sqsplit(xTr, yTr, weights=[]):
         weightFeat = weights[workingarray]
 
         for j in range(N - 1):
-
             if xTrFeat[j] != xTrFeat[j + 1]:
-
-                cutoff = xTrFeat[j] + xTr[j + 1]
+                cutoff = xTrFeat[j] + xTrFeat[j + 1]
 
                 QL = np.dot(np.square(yTrFeat[0 : j + 1]), weightFeat[0 : j + 1])
                 PL = np.dot(yTrFeat[0 : j + 1], weightFeat[0 : j + 1])
@@ -264,6 +262,6 @@ def cart(xTr, yTr, depth=np.inf, weights=None):
     #     return tree
 
 
-x = training_data[:, 1:]
-root = cart(x, training_labels)
+# x = training_data[:, 1:]
+root = cart(training_data, training_labels)
 
