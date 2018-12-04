@@ -8,7 +8,7 @@ from nltk.stem.porter import *
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from wordcloud import WordCloud
 
-nltk.download("vader_lexicon")
+# nltk.download("vader_lexicon")
 
 # functions used
 def hashtag_extract(x):
@@ -21,20 +21,20 @@ def hashtag_extract(x):
     return hashtags
 
 
-# tokenize the email and hashes the symbols into a vector
-def extractfeaturesnaive(path, B):
-    with open(path, "r") as femail:
-        # initialize all-zeros feature vector
-        v = np.zeros(B)
-        email = femail.read()
-        # breaks for non-ascii characters
-        tokens = email.split()
-        for token in tokens:
-            v[hash(token) % B] = 1
-    return v
+# # tokenize the email and hashes the symbols into a vector
+# def extractfeaturesnaive(path, B):
+#         # initialize all-zeros feature vector
+#         v = np.zeros(B)
+#         email = femail.read()
+#         # breaks for non-ascii characters
+#         tokens = email.split()
+#         for token in tokens:
+#             v[hash(token) % B] = 1
+#     return v
 
-def loadData(extractfeatures, filename, istraining, B=512):
-    '''
+
+def loadData(filename, istraining, B=512):
+    """
     INPUT:
     extractfeatures : function to extract features
     B               : dimensionality of feature space
@@ -42,7 +42,7 @@ def loadData(extractfeatures, filename, istraining, B=512):
     
     OUTPUT:
     X, Y
-    '''
+    """
     # open files
     data = pd.read_csv(filename)
 
@@ -61,24 +61,32 @@ def loadData(extractfeatures, filename, istraining, B=512):
     # android_words = " ".join([text for text in train["tidy_tweet"][train["label"] == 1]])
     # iphone_words = " ".join([text for text in train["tidy_tweet"][train["label"] == -1]])
 
+    # hash that shit
+
+    # for x in tokenized_data:
+    #     v = np.zeros(B)
+    #     for token in x:
+    #         v[hash(token) % B] = 1
+
     sentiment_analyzer = SentimentIntensityAnalyzer()
-    sentiments = data["tidy_tweet"].apply(lambda x: sentiment_analyzer.polarity_scores(x))
-    
+    sentiments = data["tidy_tweet"].apply(
+        lambda x: sentiment_analyzer.polarity_scores(x)
+    )
+
     xs = np.zeros((len(data), 4))
-    if istraining:
-        ys = np.zeros(len(data))
+    ys = np.zeros(len(data))
     for i in range(len(data["tidy_tweet"])):
         if istraining:
             ys[i] = data["label"][i]
-        xs[i][0] = sentiments[i]['neg'] 
-        xs[i][1] = sentiments[i]['neu'] 
-        xs[i][2] = sentiments[i]['pos'] 
-        xs[i][3] = sentiments[i]['compound'] 
-    if istraining: 
-        return xs, ys
-    return xs
-training_data, training_labels = loadData(extractfeaturesnaive, "train.csv", True)
+        j = 0
+        for _, value in sentiments[i].iteritems():
+            xs[i][j] = value
+            j += 1
+        j = 0
+    return xs, ys
 
+
+training_data, training_labels = loadData("train.csv", True)
 # wordcloud = WordCloud(
 #     width=800, height=500, random_state=21, max_font_size=110
 # ).generate(android_words)
@@ -94,7 +102,7 @@ training_data, training_labels = loadData(extractfeaturesnaive, "train.csv", Tru
 # HT_iphone = sum(HT_iphone,[])
 
 # testing data
-testing_data, testing_labels = loadData(extractfeaturesnaive, "test.csv", False)
+testing_data, testing_labels = loadData("test.csv", False)
 
 
 class TreeNode(object):
@@ -109,7 +117,7 @@ class TreeNode(object):
         self.prediction = prediction
 
 
-def sqlsplit(xTr, yTr, weights=[]):
+def sqsplit(xTr, yTr, weights=[]):
     N, D = xTr.shape
     assert D > 0
     assert N > 1
@@ -121,13 +129,15 @@ def sqlsplit(xTr, yTr, weights=[]):
     cut = np.inf
 
     sort = np.argsort(xTr, axis=0)
+
     for i in range(D):
-        workingarray = sort[:i]
+        workingarray = sort[:, i]
         xTrFeat = xTr[:, i][workingarray]
         yTrFeat = yTr[workingarray]
         weightFeat = weights[workingarray]
 
         for j in range(N - 1):
+
             if xTrFeat[j] != xTrFeat[j + 1]:
 
                 cutoff = xTrFeat[j] + xTr[j + 1]
@@ -174,54 +184,86 @@ def cart(xTr, yTr, depth=np.inf, weights=None):
     else:
         w = weights
 
-    cutoff_id, cutoff_val, _ = sqsplit(xTr, yTr, weights=w)
-    feature_row = xTr[:, cutoff_id]
-    left_indices = np.nonzero(feature_row <= cutoff_val)[0]
-    right_indices = np.nonzero(feature_row > cutoff_val)[0]
+    allSame = np.all(yTr == yTr[0])
+    prediction = np.dot(w, yTr) / np.sum(w)
 
-    tree = TreeNode(None, None, None, cutoff_id, cutoff_val, np.average(yTr))
-    tree.depth = 1
+    if depth <= 1 or allSame:
+        result = TreeNode(None, None, None, None, None, prediction)
+    else:
+        feature, cut, loss = sqsplit(xTr, yTr, w)
 
-    child_stack = []
-    left_child = TreeNode(None, None, tree, None, None, None)
-    left_child.depth = 2
-    child_stack.append((left_child, left_indices))
-    right_child = TreeNode(None, None, tree, None, None, None)
-    right_child.depth = 2
-    child_stack.append((right_child, right_indices))
+        if feature == np.inf:
+            return TreeNode(None, None, None, None, None, prediction)
 
-    if depth > 1:
-        tree.left = left_child
-        tree.right = right_child
+        xL = xTr[xTr[:, feature] <= cut]
+        yL = yTr[xTr[:, feature] <= cut]
+        wL = w[xTr[:, feature] <= cut]
 
-    while len(child_stack) > 0:
-        node, indices = child_stack.pop()
-        xTr_node = xTr[indices]
-        yTr_node = yTr[indices]
-        w_node = w[indices]
-        node.prediction = np.average(yTr_node)
+        xR = xTr[xTr[:, feature] > cut]
+        yR = yTr[xTr[:, feature] > cut]
+        wR = w[xTr[:, feature] > cut]
 
-        if len(indices) > 1 and node.depth < depth:
-            cutoff_id, cutoff_val, _ = sqsplit(xTr_node, yTr_node, weights=w_node)
-            node.cutoff_val = cutoff_val
+        left = cart(xL, yL, depth - 1, wL)
+        right = cart(xR, yR, depth - 1, wR)
 
-            # Unable to find a cutoff, so there can be no further branch
-            if node.cutoff_id == np.inf:
-                continue
+        result = TreeNode(left, right, None, feature, cut, prediction)
+        left.parent = result
+        right.parent = result
+    return result
 
-            feature_row = xTr_node[:, cutoff_id]
+    # cutoff_id, cutoff_val, _ = sqsplit(xTr, yTr, weights=w)
+    # feature_row = xTr[:, cutoff_id]
+    # left_indices = np.nonzero(feature_row <= cutoff_val)[0]
+    # right_indices = np.nonzero(feature_row > cutoff_val)[0]
 
-            left_indices = indices[np.nonzero(feature_row <= cutoff_val)[0]]
-            right_indices = indices[np.nonzero(feature_row > cutoff_val)[0]]
+    # tree = TreeNode(None, None, None, cutoff_id, cutoff_val, np.average(yTr))
+    # tree.depth = 1
 
-            node_left_child = TreeNode(None, None, node, None, None, None)
-            node_left_child.depth = node.depth + 1
-            child_stack.append((node_left_child, left_indices))
-            node_right_child = TreeNode(None, None, node, None, None, None)
-            node_right_child.depth = node.depth + 1
-            child_stack.append((node_right_child, right_indices))
+    # child_stack = []
+    # left_child = TreeNode(None, None, tree, None, None, None)
+    # left_child.depth = 2
+    # child_stack.append((left_child, left_indices))
+    # right_child = TreeNode(None, None, tree, None, None, None)
+    # right_child.depth = 2
+    # child_stack.append((right_child, right_indices))
 
-            node.left = node_left_child
-            node.right = node_right_child
+    # if depth > 1:
+    #     tree.left = left_child
+    #     tree.right = right_child
 
-        return tree
+    # while len(child_stack) > 0:
+    #     node, indices = child_stack.pop()
+    #     xTr_node = xTr[indices]
+    #     yTr_node = yTr[indices]
+    #     w_node = w[indices]
+    #     node.prediction = np.average(yTr_node)
+
+    #     if len(indices) > 1 and node.depth < depth:
+    #         cutoff_id, cutoff_val, _ = sqsplit(xTr_node, yTr_node, weights=w_node)
+    #         node.cutoff_val = cutoff_val
+
+    #         # Unable to find a cutoff, so there can be no further branch
+    #         if node.cutoff_id == np.inf:
+    #             continue
+
+    #         feature_row = xTr_node[:, cutoff_id]
+
+    #         left_indices = indices[np.nonzero(feature_row <= cutoff_val)[0]]
+    #         right_indices = indices[np.nonzero(feature_row > cutoff_val)[0]]
+
+    #         node_left_child = TreeNode(None, None, node, None, None, None)
+    #         node_left_child.depth = node.depth + 1
+    #         child_stack.append((node_left_child, left_indices))
+    #         node_right_child = TreeNode(None, None, node, None, None, None)
+    #         node_right_child.depth = node.depth + 1
+    #         child_stack.append((node_right_child, right_indices))
+
+    #         node.left = node_left_child
+    #         node.right = node_right_child
+
+    #     return tree
+
+
+x = training_data[:, 1:]
+root = cart(x, training_labels)
+
