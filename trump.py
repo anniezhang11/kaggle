@@ -10,30 +10,8 @@ from wordcloud import WordCloud
 
 nltk.download("vader_lexicon")
 
-# functions used
-def hashtag_extract(x):
-    hashtags = []
-    # Loop over the words in the tweet
-    for i in x:
-        ht = re.findall(r"#(\w+)", i)
-        hashtags.append(ht)
-
-    return hashtags
-
-
-# tokenize the email and hashes the symbols into a vector
-def extractfeaturesnaive(path, B):
-    with open(path, "r") as femail:
-        # initialize all-zeros feature vector
-        v = np.zeros(B)
-        email = femail.read()
-        # breaks for non-ascii characters
-        tokens = email.split()
-        for token in tokens:
-            v[hash(token) % B] = 1
-    return v
-
-def loadData(extractfeatures, filename, istraining, B=512):
+# data processing
+def loadData(filename, istraining, B=512):
     '''
     INPUT:
     extractfeatures : function to extract features
@@ -77,7 +55,9 @@ def loadData(extractfeatures, filename, istraining, B=512):
     if istraining: 
         return xs, ys
     return xs
-training_data, training_labels = loadData(extractfeaturesnaive, "train.csv", True)
+
+training_data, training_labels = loadData("train.csv", True)
+testing_data = loadData("test.csv", False)
 
 # wordcloud = WordCloud(
 #     width=800, height=500, random_state=21, max_font_size=110
@@ -94,7 +74,6 @@ training_data, training_labels = loadData(extractfeaturesnaive, "train.csv", Tru
 # HT_iphone = sum(HT_iphone,[])
 
 # testing data
-testing_data, testing_labels = loadData(extractfeaturesnaive, "test.csv", False)
 
 
 class TreeNode(object):
