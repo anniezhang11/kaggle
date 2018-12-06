@@ -15,6 +15,9 @@ from sklearn.ensemble import RandomForestClassifier
 data = pd.read_csv("train.csv")
 vectorizer = CountVectorizer(min_df=0.05)
 xTr = vectorizer.fit_transform(data["text"])
+
+# xTe = vectorizer.transform(testdata["text"])
+# print(xTe.shape)
 yTr = data["label"]
 n,_ = xTr.shape
 
@@ -39,3 +42,13 @@ clf = RandomForestClassifier(n_estimators=15)
 scores = cross_val_score(clf, xTr, yTr, cv=5)
 print(scores)
 print(scores.mean())
+
+# scores = cross_val_score(clf, xTr, yTr, cv=5)
+# clf = clf.fit(xTr, yTr)
+# predictions = clf.predict(xTe)
+# submission = pd.DataFrame()
+
+# submission["Label"] = predictions
+# submission.to_csv("submission.csv")
+# print(clf.score(xTr, yTr))
+
