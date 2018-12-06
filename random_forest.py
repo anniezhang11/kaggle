@@ -15,6 +15,9 @@ from sklearn.feature_extraction.text import TfidfTransformer
 
 # xTr, yTr = loadData("train.csv", True)
 
+def convert_to_seconds(time):
+    arr = time.split(":")
+    return int(arr[0])*360 + int(arr[1])*60
 data = pd.read_csv("train.csv")
 vectorizer = CountVectorizer(min_df=0.05)
 xTr = vectorizer.fit_transform(data["text"])
@@ -48,10 +51,19 @@ xTe = tfidf_transformer.fit_transform(xTe)
 # pos_sentiment_scores = pos_sentiment_scores.reshape(n, -1)
 
 # xTr = hstack((xTr, neg_sentiment_scores, pos_sentiment_scores))
+timesTr = np.array([i.split(' ')[1] for i in data["created"]]).reshape(nTr, -1)
+secondsTr = np.zeros(nTr)
+timesTe = np.array([i.split(' ')[1] for i in testdata["created"]]).reshape(nTe, -1)
+secondsTe = np.zeros(nTe)
+for i in range(nTr):
+    secondsTr[i] = convert_to_seconds(timesTr[i][0])
+for i in range(nTe):
+    secondsTe[i] = convert_to_seconds(timesTe[i][0])
 
 xTr = hstack(
     (
         xTr,
+        np.array(secondsTr).reshape(nTr, -1),
         np.array(data["retweetCount"]).reshape(nTr, -1),
         np.array(data["favoriteCount"]).reshape(nTr, -1),
     )
@@ -59,6 +71,7 @@ xTr = hstack(
 xTe = hstack(
     (
         xTe,
+        np.array(secondsTe).reshape(nTe, -1),
         np.array(testdata["retweetCount"]).reshape(nTe, -1),
         np.array(testdata["favoriteCount"]).reshape(nTe, -1),
     )
