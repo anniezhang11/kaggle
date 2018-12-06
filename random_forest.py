@@ -42,7 +42,7 @@ data = pd.read_csv("train.csv")
 testdata = data[split_boundary:]
 data = data[:split_boundary]
 
-vectorizer = CountVectorizer(stop_words='english', min_df=0.02)
+vectorizer = CountVectorizer(min_df=0.05, ngram_range=(1, 20), analyzer='char_wb')
 xTr = vectorizer.fit_transform(data["text"])
 xTe = vectorizer.transform(testdata["text"])
 yTr = data["label"]
@@ -55,26 +55,6 @@ tfidf_transformer = TfidfTransformer()
 xTr = tfidf_transformer.fit_transform(xTr)
 xTe = tfidf_transformer.fit_transform(xTe)
 
-
-# data["tidy_tweet"] = np.array(data["text"])
-# data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
-
-# sentiment_analyzer = SentimentIntensityAnalyzer()
-# sentiment_scores = data["tidy_tweet"].apply(
-#     lambda x: sentiment_analyzer.polarity_scores(x)
-# )
-# neg_sentiment_scores = np.zeros(n)
-# neu_sentiment_scores = np.zeros(n)
-# pos_sentiment_scores = np.zeros(n)
-# for idx, score in enumerate(sentiment_scores):
-#     neg_sentiment_scores[idx] = score["neg"]
-#     neu_sentiment_scores[idx] = score["neu"]
-#     pos_sentiment_scores[idx] = score["pos"]
-# neg_sentiment_scores = neg_sentiment_scores.reshape(n, -1)
-# neu_sentiment_scores = neu_sentiment_scores.reshape(n, -1)
-# pos_sentiment_scores = pos_sentiment_scores.reshape(n, -1)
-
-# xTr = hstack((xTr, neg_sentiment_scores, pos_sentiment_scores))
 timesTr = np.array([i.split(' ')[1] for i in data["created"]]).reshape(nTr, -1)
 secondsTr = np.zeros(nTr)
 timesTe = np.array([i.split(' ')[1] for i in testdata["created"]]).reshape(nTe, -1)
@@ -114,7 +94,13 @@ xTe = hstack(
     )
 )
 
-clf = RandomForestClassifier(n_estimators=20).fit(xTr, yTr)
+print(xTr.shape)
+
+clf = RandomForestClassifier(n_estimators=10).fit(xTr, yTr)
+# importances = clf.feature_importances_
+# best_features = np.argsort(importances)
+# print(clf.feature_importances_)
+# print(best_features)
 print(clf.score(xTe, yTe))
 # scores = cross_val_score(clf, xTr, yTr, cv=20)
 # print(scores)
