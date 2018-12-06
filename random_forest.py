@@ -10,9 +10,19 @@ from sklearn.ensemble import RandomForestClassifier
 
 # xTr, yTr = loadData("train.csv", True)
 data = pd.read_csv("train.csv")
+testdata = pd.read_csv("test.csv")
 vectorizer = CountVectorizer()
 xTr = vectorizer.fit_transform(data["text"])
+
+xTe = vectorizer.fit_transform(data["text"])
+print(xTr.toarray())
 yTr = data["label"]
 clf = RandomForestClassifier(n_estimators=15)
-scores = cross_val_score(clf, xTr, yTr, cv=5)
-print(scores.mean())
+# scores = cross_val_score(clf, xTr, yTr, cv=5)
+clf = clf.fit(xTr, yTr)
+predictions = clf.predict(xTe)
+submission = testdata["id"]
+submission.append(predictions)
+print(submission)
+# print(clf.score(xTr, yTr))
+
