@@ -1,19 +1,15 @@
 import re
 import pandas as pd
 import numpy as np
-
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-
-# nltk.download("vader_lexicon")
-
 from scipy.sparse import hstack
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfTransformer
 
-
+# function outputs sentiment data based off of tweet text
 def compute_sentiments(X, data, sentiment_analyzer):
     num_data_points, _ = X.shape
 
@@ -32,59 +28,31 @@ def compute_sentiments(X, data, sentiment_analyzer):
     X = hstack((X, neg_sentiment_scores, neu_sentiment_scores, pos_sentiment_scores))
     return X
 
-
-split_boundary = 800
-
-# xTr, yTr = loadData("train.csv", True)
-
-
+# function converts time created string into number of seconds past midnight
 def convert_to_seconds(time):
     arr = time.split(":")
     return int(arr[0]) * 360 + int(arr[1]) * 60
 
-
+# initializations
 data = pd.read_csv("train.csv")
-
 testdata = pd.read_csv("test.csv")
+split_boundary = 800
 
-# testdata = data[split_boundary:]
-# data = data[:split_boundary]
-# yTe = testdata["label"]
-
-
+# vectorize text from tweets
 vectorizer = CountVectorizer(min_df=0.05, ngram_range=(1, 20), analyzer='char_wb')
 xTr = vectorizer.fit_transform(data["text"])
 xTe = vectorizer.transform(testdata["text"])
+
 yTr = data["label"]
-
-
 nTr, _ = xTr.shape
 nTe, _ = xTe.shape
 
+# apply tfidf to tweet words
 tfidf_transformer = TfidfTransformer()
 xTr = tfidf_transformer.fit_transform(xTr)
 xTe = tfidf_transformer.fit_transform(xTe)
 
-
-# data["tidy_tweet"] = np.array(data["text"])
-# data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
-
-# sentiment_analyzer = SentimentIntensityAnalyzer()
-# sentiment_scores = data["tidy_tweet"].apply(
-#     lambda x: sentiment_analyzer.polarity_scores(x)
-# )
-# neg_sentiment_scores = np.zeros(n)
-# neu_sentiment_scores = np.zeros(n)
-# pos_sentiment_scores = np.zeros(n)
-# for idx, score in enumerate(sentiment_scores):
-#     neg_sentiment_scores[idx] = score["neg"]
-#     neu_sentiment_scores[idx] = score["neu"]
-#     pos_sentiment_scores[idx] = score["pos"]
-# neg_sentiment_scores = neg_sentiment_scores.reshape(n, -1)
-# neu_sentiment_scores = neu_sentiment_scores.reshape(n, -1)
-# pos_sentiment_scores = pos_sentiment_scores.reshape(n, -1)
-
-# xTr = hstack((xTr, neg_sentiment_scores, pos_sentiment_scores))
+# process time created data
 timesTr = np.array([i.split(" ")[1] for i in data["created"]]).reshape(nTr, -1)
 secondsTr = np.zeros(nTr)
 timesTe = np.array([i.split(" ")[1] for i in testdata["created"]]).reshape(nTe, -1)
@@ -93,8 +61,6 @@ for i in range(nTr):
     secondsTr[i] = convert_to_seconds(timesTr[i][0])
 for i in range(nTe):
     secondsTe[i] = convert_to_seconds(timesTe[i][0])
-# xTe = vectorizer.transform(testdata["text"])
-# print(xTe.shape)
 
 # Add sentiments
 sentiment_analyzer = SentimentIntensityAnalyzer()
@@ -124,9 +90,8 @@ xTe = hstack(
     )
 )
 
+# build model and generate predictions
 clf = RandomForestClassifier(n_estimators=20).fit(xTr, yTr)
-# print(clf.score(xTe, yTe))
-
 
 predictions = clf.predict(xTe)
 submission = pd.DataFrame()
