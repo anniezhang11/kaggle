@@ -39,7 +39,7 @@ data = pd.read_csv("train.csv")
 testdata = data[split_boundary:]
 data = data[:split_boundary]
 
-vectorizer = CountVectorizer(min_df=0.05)
+vectorizer = CountVectorizer(stop_words='english', min_df=0.02)
 xTr = vectorizer.fit_transform(data["text"])
 xTe = vectorizer.transform(testdata["text"])
 yTr = data["label"]
