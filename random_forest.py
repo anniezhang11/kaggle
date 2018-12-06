@@ -4,12 +4,14 @@ import numpy as np
 
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-nltk.download("vader_lexicon")
+
+# nltk.download("vader_lexicon")
 
 from scipy.sparse import hstack
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfTransformer
 
 def compute_sentiments(X, data, sentiment_analyzer):
     num_data_points,_ = X.shape
@@ -32,22 +34,47 @@ def compute_sentiments(X, data, sentiment_analyzer):
 split_boundary = 800
 
 # xTr, yTr = loadData("train.csv", True)
+
 data = pd.read_csv("train.csv")
+testdata = data[split_boundary:]
+data = data[:split_boundary]
+
 vectorizer = CountVectorizer(min_df=0.05)
-X = vectorizer.fit_transform(data["text"])
-xTr, xTe = X[:split_boundary],X[split_boundary:]
-yTr, yTe = data["label"][:split_boundary],data["label"][split_boundary:]
-n,_ = xTr.shape
+xTr = vectorizer.fit_transform(data["text"])
+xTe = vectorizer.transform(testdata["text"])
+yTr = data["label"]
+yTe = testdata["label"]
+nTr,_ = xTr.shape
+nTe,_ = xTe.shape
 
 # xTe = vectorizer.transform(testdata["text"])
 # print(xTe.shape)
 
+# Add sentiments
+sentiment_analyzer = SentimentIntensityAnalyzer()
 data["tidy_tweet"] = np.array(data["text"])
 data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
+xTr = compute_sentiments(xTr, data["tidy_tweet"], sentiment_analyzer)
 
-sentiment_analyzer = SentimentIntensityAnalyzer()
-xTr = compute_sentiments(xTr, data["tidy_tweet"][:split_boundary], sentiment_analyzer)
-xTe = compute_sentiments(xTe, data["tidy_tweet"][split_boundary:], sentiment_analyzer)
+testdata["tidy_tweet"] = np.array(testdata["text"])
+testdata["tidy_tweet"] = testdata["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
+xTe = compute_sentiments(xTe, testdata["tidy_tweet"], sentiment_analyzer)
+
+# Add retweet and feature counts
+xTr = hstack(
+    (
+        xTr,
+        np.array(data["retweetCount"]).reshape(nTr, -1),
+        np.array(data["favoriteCount"]).reshape(nTr, -1),
+    )
+)
+xTe = hstack(
+    (
+        xTe,
+        np.array(testdata["retweetCount"]).reshape(nTe, -1),
+        np.array(testdata["favoriteCount"]).reshape(nTe, -1),
+    )
+)
 
 clf = RandomForestClassifier(n_estimators=15).fit(xTr, yTr)
 print(clf.score(xTe, yTe))
@@ -56,11 +83,11 @@ print(clf.score(xTe, yTe))
 # print(scores.mean())
 
 # scores = cross_val_score(clf, xTr, yTr, cv=5)
-# clf = clf.fit(xTr, yTr)
-# predictions = clf.predict(xTe)
-# submission = pd.DataFrame()
+# print(scores)
+# print(scores.mean())
 
-# submission["Label"] = predictions
-# submission.to_csv("submission.csv")
+# scores = cross_val_score(clf, xTr, yTr, cv=5)
+
+
 # print(clf.score(xTr, yTr))
 
