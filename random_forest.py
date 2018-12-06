@@ -39,8 +39,7 @@ pos_sentiment_scores = pos_sentiment_scores.reshape(n, -1)
 xTr = hstack((xTr,neg_sentiment_scores,pos_sentiment_scores))
 
 clf = RandomForestClassifier(n_estimators=15)
-scores = cross_val_score(clf, xTr, yTr, cv=5)
-print(scores)
+scores = cross_val_score(clf, xTr, yTr, cv=100)
 print(scores.mean())
 
 # scores = cross_val_score(clf, xTr, yTr, cv=5)
