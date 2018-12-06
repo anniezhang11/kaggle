@@ -15,6 +15,7 @@ vectorizer = CountVectorizer()
 xTr = vectorizer.fit_transform(data["text"])
 
 xTe = vectorizer.transform(testdata["text"])
+print(xTe.shape)
 yTr = data["label"]
 clf = RandomForestClassifier(n_estimators=15)
 # scores = cross_val_score(clf, xTr, yTr, cv=5)
