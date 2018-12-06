@@ -44,8 +44,8 @@ xTe = vectorizer.transform(testdata["text"])
 
 # xTr = hstack((xTr, neg_sentiment_scores, pos_sentiment_scores))
 print(data["retweetCount"].size)
-xTr = hstack((xTr, data["retweetCount"], data["favoriteCount"]))
-xTe = hstack((xTe, testdata["retweetCount"], testdata["favoriteCount"]))
+xTr = hstack((xTr, np.array(data["retweetCount"]).reshape(n, -1), np.array(data["favoriteCount"]).reshape(n, -1)))
+xTe = hstack((xTe, np.array(testdata["retweetCount"]).reshape(n, -1), np.array(testdata["favoriteCount"]).reshape(n, -1)))
 
 clf = RandomForestClassifier(n_estimators=15)
 # scores = cross_val_score(clf, xTr, yTr, cv=100)
