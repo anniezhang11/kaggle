@@ -47,16 +47,14 @@ xTr = vectorizer.fit_transform(data["text"])
 xTe = vectorizer.transform(testdata["text"])
 yTr = data["label"]
 yTe = testdata["label"]
+
 nTr,_ = xTr.shape
 nTe,_ = xTe.shape
-
-testdata = pd.read_csv("test.csv")
-xTe = vectorizer.transform(testdata["text"])
-nTe, _ = xTe.shape
 
 tfidf_transformer = TfidfTransformer()
 xTr = tfidf_transformer.fit_transform(xTr)
 xTe = tfidf_transformer.fit_transform(xTe)
+
 
 # data["tidy_tweet"] = np.array(data["text"])
 # data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
@@ -116,7 +114,7 @@ xTe = hstack(
     )
 )
 
-clf = RandomForestClassifier(n_estimators=15).fit(xTr, yTr)
+clf = RandomForestClassifier(n_estimators=20).fit(xTr, yTr)
 print(clf.score(xTe, yTe))
 # scores = cross_val_score(clf, xTr, yTr, cv=20)
 # print(scores)
