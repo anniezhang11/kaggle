@@ -39,6 +39,7 @@ def hashit(data, B):
     v = np.zeros(B)
     for token in data:
         v[hash(token) % B] = 1
+
     return v
 
 
@@ -137,6 +138,7 @@ w, losses = adagrad(
     1000,
     1e-06,
 )
+
 preds = linclassify(w, training_data)
 trainingacc = np.mean(preds == training_labels)
 print(trainingacc)
