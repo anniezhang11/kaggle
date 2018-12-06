@@ -11,6 +11,7 @@ from scipy.sparse import hstack
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfTransformer
 
 # xTr, yTr = loadData("train.csv", True)
 
@@ -23,6 +24,9 @@ n, _ = xTr.shape
 testdata = pd.read_csv("train.csv")
 xTe = vectorizer.transform(testdata["text"])
 
+tfidf_transformer = TfidfTransformer()
+xTr = tfidf_transformer.fit_transform(xTr)
+xTe = tfidf_transformer.fit_transform(xTe)
 
 # data["tidy_tweet"] = np.array(data["text"])
 # data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
