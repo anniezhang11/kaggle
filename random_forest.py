@@ -14,7 +14,7 @@ testdata = pd.read_csv("test.csv")
 vectorizer = CountVectorizer()
 xTr = vectorizer.fit_transform(data["text"])
 
-xTe = vectorizer.fit_transform(testdata["text"])
+xTe = vectorizer.transform(testdata["text"])
 print(xTe.shape)
 yTr = data["label"]
 clf = RandomForestClassifier(n_estimators=15)
