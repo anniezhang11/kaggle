@@ -18,11 +18,11 @@ data = pd.read_csv("train.csv")
 vectorizer = CountVectorizer(min_df=0.05)
 xTr = vectorizer.fit_transform(data["text"])
 yTr = data["label"]
-n, _ = xTr.shape
+nTr, _ = xTr.shape
 
-testdata = pd.read_csv("train.csv")
+testdata = pd.read_csv("test.csv")
 xTe = vectorizer.transform(testdata["text"])
-
+nTe, _ = xTe.shape
 
 # data["tidy_tweet"] = np.array(data["text"])
 # data["tidy_tweet"] = data["tidy_tweet"].str.lower().replace("[^a-zA-Z#]", " ")
@@ -43,9 +43,21 @@ xTe = vectorizer.transform(testdata["text"])
 # pos_sentiment_scores = pos_sentiment_scores.reshape(n, -1)
 
 # xTr = hstack((xTr, neg_sentiment_scores, pos_sentiment_scores))
-print(data["retweetCount"].size)
-xTr = hstack((xTr, np.array(data["retweetCount"]).reshape(n, -1), np.array(data["favoriteCount"]).reshape(n, -1)))
-xTe = hstack((xTe, np.array(testdata["retweetCount"]).reshape(n, -1), np.array(testdata["favoriteCount"]).reshape(n, -1)))
+
+xTr = hstack(
+    (
+        xTr,
+        np.array(data["retweetCount"]).reshape(nTr, -1),
+        np.array(data["favoriteCount"]).reshape(nTr, -1),
+    )
+)
+xTe = hstack(
+    (
+        xTe,
+        np.array(testdata["retweetCount"]).reshape(nTe, -1),
+        np.array(testdata["favoriteCount"]).reshape(nTe, -1),
+    )
+)
 
 clf = RandomForestClassifier(n_estimators=15)
 # scores = cross_val_score(clf, xTr, yTr, cv=100)
