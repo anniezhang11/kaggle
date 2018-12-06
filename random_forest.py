@@ -14,15 +14,15 @@ testdata = pd.read_csv("test.csv")
 vectorizer = CountVectorizer()
 xTr = vectorizer.fit_transform(data["text"])
 
-xTe = vectorizer.fit_transform(testdata["text"])
-print(xTe.shape)
+xTe = vectorizer.transform(testdata["text"])
 yTr = data["label"]
 clf = RandomForestClassifier(n_estimators=15)
 # scores = cross_val_score(clf, xTr, yTr, cv=5)
 clf = clf.fit(xTr, yTr)
 predictions = clf.predict(xTe)
 submission = pd.DataFrame()
-submission["ID"] = testdata["id"]
-print(len(predictions))
+
+submission["Label"] = predictions
+submission.to_csv("submission.csv")
 # print(clf.score(xTr, yTr))
 
